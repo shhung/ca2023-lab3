@@ -14,9 +14,10 @@
 
 .global _start
 _start:
-    la  a0, IN_N
+    la  a0, im_2_1
     la  a1, im_5
     jal ImgScale
+    la  a0, im_5
 loop:
     j loop
 

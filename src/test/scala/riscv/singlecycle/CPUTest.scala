@@ -118,11 +118,24 @@ class ImgScaleTest extends AnyFlatSpec with ChiselScalatestTester {
   behavior.of("Single Cycle CPU")
   it should "Image Scaling..." in {
     test(new TestTopModule("imgScale.asmbin")).withAnnotations(TestAnnotations.annos) { c =>
-      for (i <- 1 to 50) {
+      for (i <- 1 to 220) {
         c.clock.step(1000)
         c.io.mem_debug_read_address.poke((i * 4).U) // Avoid timeout
       }
-      
+
+      c.io.regs_debug_read_address.poke(10.U) // a0, address of result matrix
+      val addr = c.io.regs_debug_read_data.peek()
+      println(s"starting address: ${addr}")
+      val pos = 5632
+      for (i <- 0 to 4) {
+        for (j <- 0 to 4) {
+          val id = i * 5 + j
+          c.io.mem_debug_read_address.poke((pos + id * 4).U)
+          c.clock.step()
+          print(s"${c.io.mem_debug_read_data.peek()}, ")
+        }
+        println()
+      }
     }
   }
 }
