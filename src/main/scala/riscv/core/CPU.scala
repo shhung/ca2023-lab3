@@ -18,6 +18,26 @@ class CPU extends Module {
   val mem        = Module(new MemoryAccess)
   val wb         = Module(new WriteBack)
 
+  class IFID_EXBundle extends Bundle {
+    val instruction = UInt(Parameters.InstructionWidth)
+    val instruction_address = UInt(Parameters.AddrWidth)
+    val immediate = UInt(Parameters.DataWidth)
+    val aluop1_source = UInt(1.W)
+    val aluop2_source = UInt(1.W)
+    val reg_read_address1 = UInt(Parameters.PhysicalRegisterAddrWidth)
+    val reg_read_address2 = UInt(Parameters.PhysicalRegisterAddrWidth)
+  }
+
+  class EX_MEMWBBundle extends Bundle {
+    val instruction = UInt(Parameters.InstructionWidth)
+    val ex_result = UInt(Parameters.DataWidth)
+    val reg2_data = UInt(Parameters.DataWidth)
+    val memory_read_enable = Bool()
+    val memory_write_enable = Bool()
+    val instruction_address = UInt(Parameters.AddrWidth)
+    val regs_write_source = UInt(2.W)
+  }
+
   io.deviceSelect := mem.io.memory_bundle
     .address(Parameters.AddrBits - 1, Parameters.AddrBits - Parameters.SlaveDeviceCountBits)
 
