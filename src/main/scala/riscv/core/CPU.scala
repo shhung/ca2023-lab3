@@ -83,8 +83,24 @@ class CPU extends Module {
 
   ex.io.instruction         := fd_ex.instruction
   ex.io.instruction_address := fd_ex.instruction_address
-  ex.io.reg1_data           := Mux(fd_ex.regs_reg1_read_address === ex_wb.wbcontrol.)
-  ex.io.reg2_data           := regs.io.read_data2
+  when(ex_wb.wbcontrol.reg_write_enable && ex_wb.wbcontrol.reg_write_address === fd_ex.reg_read_address1) {
+    when(ex_wb.wbcontrol.memory_read_enable) {
+      ex.io.reg1_data := mem.io.wb_memory_read_data
+    }.otherwise {
+      ex.io.reg1_data := ex_wb.mem_alu_result
+    }
+  }.otherwise {
+    ex.io.reg1_data := regs.io.read_data1
+  }
+  when(ex_wb.wbcontrol.reg_write_enable && ex_wb.wbcontrol.reg_write_address === fd_ex.reg_read_address2) {
+    when(ex_wb.wbcontrol.memory_read_enable) {
+      ex.io.reg2_data := mem.io.wb_memory_read_data
+    }.otherwise {
+      ex.io.reg2_data := ex_wb.mem_alu_result
+    }
+  }.otherwise {
+    ex.io.reg2_data := regs.io.read_data1
+  }
   ex.io.immediate           := fd_ex.ex_immediate
   ex.io.aluop1_source       := fd_ex.ex_aluop1_source
   ex.io.aluop2_source       := fd_ex.ex_aluop2_source
