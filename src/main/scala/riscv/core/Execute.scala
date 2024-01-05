@@ -43,10 +43,6 @@ class Execute extends Module {
 
   io.mem_alu_result := alu.io.result
   
-//always not taken
-  io.if_jump_flag := false.B
-
-
   io.if_jump_flag := opcode === Instructions.jal ||
     (opcode === Instructions.jalr) ||
     (opcode === InstructionTypes.B) && MuxLookup(
