@@ -21,6 +21,8 @@ class InstructionFetch extends Module {
     val instruction         = Output(UInt(Parameters.InstructionWidth))
   })
   
+val pc = RegInit(ProgramCounter.EntryAddress)
+
 class BranchInstructionDetector extends Module {
   val io = IO(new Bundle {
     val instruction = Input(UInt(32.W))
@@ -29,24 +31,22 @@ class BranchInstructionDetector extends Module {
 
   // 提取opcode
   val opcode = io.instruction(6, 0)
-
   io.isBranchInstruction := opcode === "b1100011".U
 }
   
-class AlwaysNotTakenPredictorIO(xlen: Int) extends Bundle {
+class AlwaysNotTakenPredictor(xlen: Int) extends Bundle {
 
   val predictedresult = Output(Bool())
-}
-
-  val pc = RegInit(ProgramCounter.EntryAddress)
   val alwaysNotTakenPredictor = Module(new AlwaysNotTakenPredictor)
-  
-  when(io.instruction_valid) {
-    io.instruction := io.instruction_read_data
-   
   val predictedresult = io.isBranchInstruction
+ }
+  
+  //always not taken
+  io.jump_flag := false.B
 
-   
+   when(io.instruction_valid) {
+    io.instruction := io.instruction_read_data
+    
     // lab3(InstructionFetch) begin
      when(io.jump_flag_id && predictedresult) {
       pc := io.jump_address_id
