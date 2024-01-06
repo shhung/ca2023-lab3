@@ -101,7 +101,7 @@ class CPU extends Module {
   fd_ex.ex_aluop2_source       := id.io.ex_aluop2_source
   fd_ex.reg_read_address1   := id.io.regs_reg1_read_address
   fd_ex.reg_read_address2   := id.io.regs_reg2_read_address
-  fd_ex.stall               := ex_wb.if_jump_flag
+  fd_ex.stall               := ex_wb.if_jump_flag //first stall
   fd_ex.wbcontrol.memory_read_enable  := id.io.memory_read_enable
   fd_ex.wbcontrol.memory_write_enable := id.io.memory_write_enable
   fd_ex.wbcontrol.wb_reg_write_source := id.io.wb_reg_write_source
@@ -120,6 +120,13 @@ class CPU extends Module {
 
   ex.io.instruction         := fd_ex.instruction
   ex.io.instruction_address := fd_ex.instruction_address
+  
+  //disable regWE&memWE
+when(fd_ex.stall) {
+    fd_ex.wbcontrol.memory_write_enable  := false.B
+    fd_ex.wbcontrol.reg_write_enable     := false.B
+    }.otherwise {}
+  
   when(ex_wb.wbcontrol.reg_write_enable && ex_wb.wbcontrol.reg_write_address === fd_ex.reg_read_address1) {
     when(ex_wb.wbcontrol.memory_read_enable) {
       ex.io.reg1_data := mem.io.wb_memory_read_data
@@ -154,7 +161,7 @@ class CPU extends Module {
   ex_wb.reg2_data           := regs.io.read_data2
   ex_wb.if_jump_flag        := ex.io.if_jump_flag
   ex_wb.if_jump_address     := ex.io.if_jump_address
-  ex_wb.stall               := fd_ex.stall || ex_wb.if_jump_flag
+  ex_wb.stall               := fd_ex.stall || ex_wb.if_jump_flag //second stall
   ex_wb.wbcontrol           := fd_ex.wbcontrol
 
   // debug
@@ -171,6 +178,12 @@ class CPU extends Module {
   regs.io.write_enable  := ex_wb.wbcontrol.reg_write_enable
   regs.io.write_address := ex_wb.wbcontrol.reg_write_address
   regs.io.write_data    := wb.io.regs_write_data
+
+//disable regWE&memWE
+when(ex_wb.stall || ex_wb.if_jump_flag) {
+    ex_wb.wbcontrol.reg_write_enable     := false.B
+    ex_wb.wbcontrol.memory_write_enable  := false.B
+    }.otherwise {}
 
   io.memory_bundle.address := Cat(
     0.U(Parameters.SlaveDeviceCountBits.W),
