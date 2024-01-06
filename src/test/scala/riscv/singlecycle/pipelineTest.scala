@@ -23,21 +23,23 @@ class PipelineTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "print out the stage register" in {
     test(new CPU).withAnnotations(TestAnnotations.annos) { c =>
       c.io.instruction_valid.poke(true.B)
-      // for (i <- 1 to 3) {
-      //   // add x3, x1, x2
-      //   // c.io.instruction.poke(0x002081b3L.U) 
-      //   // lw x11, 20(x13)
-      //   // c.io.instruction.poke(0x0146a583L.U)
-      //   // beq x0, x0, 1000
-      //   c.io.instruction.poke(0x3e000463L.U)
-      //   c.clock.step()
-      // }
-      c.io.instruction.poke(0x3e000463L.U)
+
+
+      // c.io.instruction.poke(0x3e001463L.U) // bne x0, x0, 1000
+      // // c.io.instruction.poke(0x3e000463L.U) // beq x0, x0, 1000
+      // c.clock.step()
+      // c.io.instruction.poke(0x002081b3L.U) // add x3, x1, x2
+      // c.clock.step()
+      // c.io.instruction.poke(0x0146a583L.U) // lw x11, 20(x13)
+      // c.clock.step()
+
+      c.io.instruction.poke(0x00100513L.U) // addi x10, x0, 1
       c.clock.step()
-      c.io.instruction.poke(0x002081b3L.U)
+      c.io.instruction.poke(0x00500593L.U) // addi x11, x0, 5
       c.clock.step()
-      c.io.instruction.poke(0x0146a583L.U)
-      c.clock.step(3)
+      c.io.instruction.poke(0x40a58633L.U) // sub x12, x11, x10
+      c.io.instruction.poke(0x00a58633L.U) // add x12, x11, x10
+      c.clock.step(5)
     }
   }
 }

@@ -20,7 +20,6 @@ class CPU extends Module {
 
   // WB include MEM and WB
   class WBControl extends Bundle {
-    val stall = Bool()
     val memory_read_enable  = Bool()
     val memory_write_enable = Bool()
     val wb_reg_write_source = UInt(2.W)
@@ -31,8 +30,7 @@ class CPU extends Module {
       cf"  mem_WE: $memory_write_enable" +
       cf"  wb_reg_src: $wb_reg_write_source" +
       cf"  reg_WE: $reg_write_enable" +
-      cf"  reg_WA: $reg_write_address" +
-      cf"  stall: $stall\n"
+      cf"  reg_WA: $reg_write_address\n"
     }
   }
 
@@ -44,6 +42,7 @@ class CPU extends Module {
     val ex_aluop2_source    = UInt(1.W)
     val reg_read_address1   = UInt(Parameters.PhysicalRegisterAddrWidth)
     val reg_read_address2   = UInt(Parameters.PhysicalRegisterAddrWidth)
+    val stall               = Bool()
     val wbcontrol           = new WBControl
     override def toPrintable: Printable = {
       cf"  inst: 0x$instruction%x" +
@@ -53,6 +52,7 @@ class CPU extends Module {
       cf"  op2_src: $ex_aluop2_source" +
       cf"  reg1_RA: $reg_read_address1" +
       cf"  reg2_RA: $reg_read_address2" +
+      cf"  stall: $stall" +
       cf"  $wbcontrol"
     }
   }
@@ -62,12 +62,18 @@ class CPU extends Module {
     val instruction_address = UInt(Parameters.AddrWidth)
     val mem_alu_result      = UInt(Parameters.DataWidth)
     val reg2_data           = UInt(Parameters.DataWidth)
+    val if_jump_flag        = Bool()
+    val if_jump_address     = UInt(Parameters.DataWidth)
+    val stall               = Bool()
     val wbcontrol           = new WBControl
     override def toPrintable: Printable = {
       cf"  inst: 0x$instruction%x" +
       cf"  instAddr: $instruction_address" +
       cf"  alu_out: $mem_alu_result" +
       cf"  reg2_data: $reg2_data" +
+      cf"  jump_flag: $if_jump_flag" +
+      cf"  jumpAddr: $if_jump_address" +
+      cf"  stall: $stall" +
       cf"  $wbcontrol"
     }
   }
@@ -79,8 +85,8 @@ class CPU extends Module {
     .address(Parameters.AddrBits - 1, Parameters.AddrBits - Parameters.SlaveDeviceCountBits)
 
   // IF/ID
-  inst_fetch.io.jump_address_id       := ex.io.if_jump_address
-  inst_fetch.io.jump_flag_id          := ex.io.if_jump_flag
+  inst_fetch.io.jump_address_id       := ex_wb.if_jump_address
+  inst_fetch.io.jump_flag_id          := ex_wb.if_jump_flag
   inst_fetch.io.instruction_valid     := io.instruction_valid
   inst_fetch.io.instruction_read_data := io.instruction
   io.instruction_address              := inst_fetch.io.instruction_address
@@ -95,12 +101,12 @@ class CPU extends Module {
   fd_ex.ex_aluop2_source       := id.io.ex_aluop2_source
   fd_ex.reg_read_address1   := id.io.regs_reg1_read_address
   fd_ex.reg_read_address2   := id.io.regs_reg2_read_address
+  fd_ex.stall               := ex_wb.if_jump_flag
   fd_ex.wbcontrol.memory_read_enable  := id.io.memory_read_enable
   fd_ex.wbcontrol.memory_write_enable := id.io.memory_write_enable
   fd_ex.wbcontrol.wb_reg_write_source := id.io.wb_reg_write_source
   fd_ex.wbcontrol.reg_write_enable    := id.io.reg_write_enable
   fd_ex.wbcontrol.reg_write_address   := id.io.reg_write_address
-  fd_ex.wbcontrol.stall     := ex.io.if_jump_flag
 
   // debug
   printf(cf"fd_ex = $fd_ex")
@@ -130,19 +136,26 @@ class CPU extends Module {
       ex.io.reg2_data := ex_wb.mem_alu_result
     }
   }.otherwise {
-    ex.io.reg2_data := regs.io.read_data1
+    ex.io.reg2_data := regs.io.read_data2
   }
   ex.io.immediate           := fd_ex.immediate
   ex.io.aluop1_source       := fd_ex.ex_aluop1_source
   ex.io.aluop2_source       := fd_ex.ex_aluop2_source
+
+  // val reg1data = regs.io.read_data1
+  // val reg2data = regs.io.read_data2
+  // printf(cf"  reg1data = $reg1data")
+  // printf(cf"  reg2data = $reg2data\n")
 
   // Pipelining, EXE-WB
   ex_wb.instruction         := fd_ex.instruction
   ex_wb.instruction_address := fd_ex.instruction_address
   ex_wb.mem_alu_result      := ex.io.mem_alu_result
   ex_wb.reg2_data           := regs.io.read_data2
+  ex_wb.if_jump_flag        := ex.io.if_jump_flag
+  ex_wb.if_jump_address     := ex.io.if_jump_address
+  ex_wb.stall               := fd_ex.stall || ex_wb.if_jump_flag
   ex_wb.wbcontrol           := fd_ex.wbcontrol
-  ex_wb.wbcontrol.stall     := ex.io.if_jump_flag
 
   // debug
   printf(cf"ex_wb = $ex_wb")
