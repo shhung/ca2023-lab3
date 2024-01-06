@@ -23,10 +23,21 @@ class PipelineTest extends AnyFlatSpec with ChiselScalatestTester {
   it should "print out the stage register" in {
     test(new CPU).withAnnotations(TestAnnotations.annos) { c =>
       c.io.instruction_valid.poke(true.B)
-      for (i <- 1 to 3) {
-        c.io.instruction.poke(0x002081b3L.U)
-        c.clock.step()
-      }
+      // for (i <- 1 to 3) {
+      //   // add x3, x1, x2
+      //   // c.io.instruction.poke(0x002081b3L.U) 
+      //   // lw x11, 20(x13)
+      //   // c.io.instruction.poke(0x0146a583L.U)
+      //   // beq x0, x0, 1000
+      //   c.io.instruction.poke(0x3e000463L.U)
+      //   c.clock.step()
+      // }
+      c.io.instruction.poke(0x3e000463L.U)
+      c.clock.step()
+      c.io.instruction.poke(0x002081b3L.U)
+      c.clock.step()
+      c.io.instruction.poke(0x0146a583L.U)
+      c.clock.step(3)
     }
   }
 }

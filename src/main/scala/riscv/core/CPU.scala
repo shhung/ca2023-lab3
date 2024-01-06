@@ -20,17 +20,19 @@ class CPU extends Module {
 
   // WB include MEM and WB
   class WBControl extends Bundle {
+    val stall = Bool()
     val memory_read_enable  = Bool()
     val memory_write_enable = Bool()
     val wb_reg_write_source = UInt(2.W)
-    val reg_write_enable    = Output(Bool())
-    val reg_write_address   = Output(UInt(Parameters.PhysicalRegisterAddrWidth))
+    val reg_write_enable    = Bool()
+    val reg_write_address   = UInt(Parameters.PhysicalRegisterAddrWidth)
     override def toPrintable: Printable = {
       cf"  mem_RE: $memory_read_enable" +
       cf"  mem_WE: $memory_write_enable" +
       cf"  wb_reg_src: $wb_reg_write_source" +
       cf"  reg_WE: $reg_write_enable" +
-      cf"  reg_WA: $reg_write_address\n"
+      cf"  reg_WA: $reg_write_address" +
+      cf"  stall: $stall\n"
     }
   }
 
@@ -97,7 +99,8 @@ class CPU extends Module {
   fd_ex.wbcontrol.memory_write_enable := id.io.memory_write_enable
   fd_ex.wbcontrol.wb_reg_write_source := id.io.wb_reg_write_source
   fd_ex.wbcontrol.reg_write_enable    := id.io.reg_write_enable
-  fd_ex.wbcontrol.wb_reg_write_source := id.io.wb_reg_write_source
+  fd_ex.wbcontrol.reg_write_address   := id.io.reg_write_address
+  fd_ex.wbcontrol.stall     := ex.io.if_jump_flag
 
   // debug
   printf(cf"fd_ex = $fd_ex")
@@ -139,6 +142,7 @@ class CPU extends Module {
   ex_wb.mem_alu_result      := ex.io.mem_alu_result
   ex_wb.reg2_data           := regs.io.read_data2
   ex_wb.wbcontrol           := fd_ex.wbcontrol
+  ex_wb.wbcontrol.stall     := ex.io.if_jump_flag
 
   // debug
   printf(cf"ex_wb = $ex_wb")
