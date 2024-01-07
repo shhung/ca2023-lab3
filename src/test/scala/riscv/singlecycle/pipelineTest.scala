@@ -26,20 +26,21 @@ class PipelineTest extends AnyFlatSpec with ChiselScalatestTester {
 
 
       // c.io.instruction.poke(0x3e001463L.U) // bne x0, x0, 1000
-      // // c.io.instruction.poke(0x3e000463L.U) // beq x0, x0, 1000
-      // c.clock.step()
-      // c.io.instruction.poke(0x002081b3L.U) // add x3, x1, x2
-      // c.clock.step()
-      // c.io.instruction.poke(0x0146a583L.U) // lw x11, 20(x13)
-      // c.clock.step()
+      c.io.instruction.poke(0x3e000463L.U) // beq x0, x0, 1000
+      c.clock.step()
+      c.io.instruction.poke(0x002081b3L.U) // add x3, x1, x2
+      c.clock.step()
+      c.io.instruction.poke(0x0146a583L.U) // lw x11, 20(x13)
+      c.clock.step()
 
-      c.io.instruction.poke(0x00100513L.U) // addi x10, x0, 1
-      c.clock.step()
-      c.io.instruction.poke(0x00500593L.U) // addi x11, x0, 5
-      c.clock.step()
-      c.io.instruction.poke(0x40a58633L.U) // sub x12, x11, x10
-      c.io.instruction.poke(0x00a58633L.U) // add x12, x11, x10
-      c.clock.step(5)
+      // c.io.instruction.poke(0x00100513L.U) // addi x10, x0, 1
+      // c.clock.step()
+      // c.io.instruction.poke(0x00500593L.U) // addi x11, x0, 5
+      // c.clock.step()
+      // c.io.instruction.poke(0x40a58633L.U) // sub x12, x11, x10
+      // c.clock.step()
+      // c.io.instruction.poke(0x00a58633L.U) // add x12, x11, x10
+      c.clock.step(3)
     }
   }
 }

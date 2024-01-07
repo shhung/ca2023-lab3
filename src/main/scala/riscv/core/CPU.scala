@@ -121,13 +121,8 @@ class CPU extends Module {
   ex.io.instruction         := fd_ex.instruction
   ex.io.instruction_address := fd_ex.instruction_address
   
-  //disable regWE&memWE
-when(fd_ex.stall) {
-    fd_ex.wbcontrol.memory_write_enable  := false.B
-    fd_ex.wbcontrol.reg_write_enable     := false.B
-    }.otherwise {}
-  
-  when(ex_wb.wbcontrol.reg_write_enable && ex_wb.wbcontrol.reg_write_address === fd_ex.reg_read_address1) {
+  val reg2data = Wire(UInt(Parameters.DataWidth))
+  when(ex_wb.wbcontrol.reg_write_enable && (ex_wb.wbcontrol.reg_write_address === fd_ex.reg_read_address1)) {
     when(ex_wb.wbcontrol.memory_read_enable) {
       ex.io.reg1_data := mem.io.wb_memory_read_data
     }.otherwise {
@@ -136,33 +131,39 @@ when(fd_ex.stall) {
   }.otherwise {
     ex.io.reg1_data := regs.io.read_data1
   }
-  when(ex_wb.wbcontrol.reg_write_enable && ex_wb.wbcontrol.reg_write_address === fd_ex.reg_read_address2) {
+  when(ex_wb.wbcontrol.reg_write_enable && (ex_wb.wbcontrol.reg_write_address === fd_ex.reg_read_address2)) {
     when(ex_wb.wbcontrol.memory_read_enable) {
-      ex.io.reg2_data := mem.io.wb_memory_read_data
+      reg2data := mem.io.wb_memory_read_data
     }.otherwise {
-      ex.io.reg2_data := ex_wb.mem_alu_result
+      reg2data := ex_wb.mem_alu_result
     }
   }.otherwise {
-    ex.io.reg2_data := regs.io.read_data2
+    reg2data := regs.io.read_data2
   }
+  ex.io.reg2_data           := reg2data
   ex.io.immediate           := fd_ex.immediate
   ex.io.aluop1_source       := fd_ex.ex_aluop1_source
   ex.io.aluop2_source       := fd_ex.ex_aluop2_source
-
-  // val reg1data = regs.io.read_data1
-  // val reg2data = regs.io.read_data2
-  // printf(cf"  reg1data = $reg1data")
-  // printf(cf"  reg2data = $reg2data\n")
 
   // Pipelining, EXE-WB
   ex_wb.instruction         := fd_ex.instruction
   ex_wb.instruction_address := fd_ex.instruction_address
   ex_wb.mem_alu_result      := ex.io.mem_alu_result
-  ex_wb.reg2_data           := regs.io.read_data2
+  ex_wb.reg2_data           := reg2data
   ex_wb.if_jump_flag        := ex.io.if_jump_flag
   ex_wb.if_jump_address     := ex.io.if_jump_address
   ex_wb.stall               := fd_ex.stall || ex_wb.if_jump_flag //second stall
-  ex_wb.wbcontrol           := fd_ex.wbcontrol
+
+  //disable regWE&memWE
+  when(fd_ex.stall || ex_wb.if_jump_flag) {
+    ex_wb.wbcontrol.memory_read_enable  := fd_ex.wbcontrol.memory_read_enable
+    ex_wb.wbcontrol.wb_reg_write_source := fd_ex.wbcontrol.wb_reg_write_source
+    ex_wb.wbcontrol.reg_write_address   := fd_ex.wbcontrol.reg_write_address
+    ex_wb.wbcontrol.reg_write_enable    := false.B
+    ex_wb.wbcontrol.memory_write_enable := false.B
+  }.otherwise {
+    ex_wb.wbcontrol := fd_ex.wbcontrol
+  }
 
   // debug
   printf(cf"ex_wb = $ex_wb")
@@ -178,12 +179,6 @@ when(fd_ex.stall) {
   regs.io.write_enable  := ex_wb.wbcontrol.reg_write_enable
   regs.io.write_address := ex_wb.wbcontrol.reg_write_address
   regs.io.write_data    := wb.io.regs_write_data
-
-//disable regWE&memWE
-when(ex_wb.stall || ex_wb.if_jump_flag) {
-    ex_wb.wbcontrol.reg_write_enable     := false.B
-    ex_wb.wbcontrol.memory_write_enable  := false.B
-    }.otherwise {}
 
   io.memory_bundle.address := Cat(
     0.U(Parameters.SlaveDeviceCountBits.W),
