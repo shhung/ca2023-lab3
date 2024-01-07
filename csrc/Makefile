@@ -27,6 +27,8 @@ BINS = \
 	mmio.asmbin \
 	quicksort.asmbin \
 	sb.asmbin \
+	forward.asmbin \
+	branch.asmbin \
 	imgScale.asmbin
 
 # Clear the .DEFAULT_GOAL special variable, so that the following turns

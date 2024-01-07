@@ -64,7 +64,7 @@ class TestTopModule(exeFilename: String) extends Module {
 }
 
 class FibonacciTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior.of("Single Cycle CPU")
+  behavior.of("3-stage Pipeline CPU")
   it should "recursively calculate Fibonacci(10)" in {
     test(new TestTopModule("fibonacci.asmbin")).withAnnotations(TestAnnotations.annos) { c =>
       for (i <- 1 to 50) {
@@ -80,7 +80,7 @@ class FibonacciTest extends AnyFlatSpec with ChiselScalatestTester {
 }
 
 class QuicksortTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior.of("Single Cycle CPU")
+  behavior.of("3-stage Pipeline CPU")
   it should "perform a quicksort on 10 numbers" in {
     test(new TestTopModule("quicksort.asmbin")).withAnnotations(TestAnnotations.annos) { c =>
       for (i <- 1 to 50) {
@@ -97,7 +97,7 @@ class QuicksortTest extends AnyFlatSpec with ChiselScalatestTester {
 }
 
 class ByteAccessTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior.of("Single Cycle CPU")
+  behavior.of("3-stage Pipeline CPU")
   it should "store and load a single byte" in {
     test(new TestTopModule("sb.asmbin")).withAnnotations(TestAnnotations.annos) { c =>
       for (i <- 1 to 100) {
@@ -114,8 +114,42 @@ class ByteAccessTest extends AnyFlatSpec with ChiselScalatestTester {
   }
 }
 
+class ForwardTest extends AnyFlatSpec with ChiselScalatestTester {
+  behavior.of("3-stage Pipeline CPU")
+  it should "bypass the operand" in {
+    test(new TestTopModule("forward.asmbin")).withAnnotations(TestAnnotations.annos) { c =>
+      for (i <- 1 to 100) {
+        c.clock.step()
+        c.io.mem_debug_read_address.poke((i * 4).U) // Avoid timeout
+      }
+      c.io.regs_debug_read_address.poke(12.U) // a2
+      c.io.regs_debug_read_data.expect(0x8.U)
+      c.io.regs_debug_read_address.poke(13.U) // a3
+      c.io.regs_debug_read_data.expect(0x8.U)
+      c.io.regs_debug_read_address.poke(14.U) // a4
+      c.io.regs_debug_read_data.expect(0xAC.U)
+      c.io.regs_debug_read_address.poke(15.U) // a5
+      c.io.regs_debug_read_data.expect(0xAC.U)
+    }
+  }
+}
+
+class BranchTest extends AnyFlatSpec with ChiselScalatestTester {
+  behavior.of("3-stage Pipeline CPU")
+  it should "branch correctly" in {
+    test(new TestTopModule("branch.asmbin")).withAnnotations(TestAnnotations.annos) { c =>
+      for (i <- 1 to 150) {
+        c.clock.step()
+        c.io.mem_debug_read_address.poke((i * 4).U) // Avoid timeout
+      }
+      c.io.regs_debug_read_address.poke(10.U) // a0
+      c.io.regs_debug_read_data.expect(0x3.U)
+    }
+  }
+}
+
 class ImgScaleTest extends AnyFlatSpec with ChiselScalatestTester {
-  behavior.of("Single Cycle CPU")
+  behavior.of("3-stage Pipeline CPU")
   it should "Image Scaling..." in {
     test(new TestTopModule("imgScale.asmbin")).withAnnotations(TestAnnotations.annos) { c =>
       for (i <- 1 to 220) {

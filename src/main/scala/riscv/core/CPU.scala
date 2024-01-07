@@ -109,7 +109,7 @@ class CPU extends Module {
   fd_ex.wbcontrol.reg_write_address   := id.io.reg_write_address
 
   // debug
-  printf(cf"fd_ex = $fd_ex")
+  // printf(cf"fd_ex = $fd_ex")
   // 
 
   // EXE
@@ -150,12 +150,13 @@ class CPU extends Module {
   ex_wb.instruction_address := fd_ex.instruction_address
   ex_wb.mem_alu_result      := ex.io.mem_alu_result
   ex_wb.reg2_data           := reg2data
-  ex_wb.if_jump_flag        := ex.io.if_jump_flag
+  // ex_wb.if_jump_flag        := ex.io.if_jump_flag
   ex_wb.if_jump_address     := ex.io.if_jump_address
   ex_wb.stall               := fd_ex.stall || ex_wb.if_jump_flag //second stall
 
   //disable regWE&memWE
   when(fd_ex.stall || ex_wb.if_jump_flag) {
+    ex_wb.if_jump_flag                  := false.B
     ex_wb.wbcontrol.memory_read_enable  := fd_ex.wbcontrol.memory_read_enable
     ex_wb.wbcontrol.wb_reg_write_source := fd_ex.wbcontrol.wb_reg_write_source
     ex_wb.wbcontrol.reg_write_address   := fd_ex.wbcontrol.reg_write_address
@@ -163,11 +164,12 @@ class CPU extends Module {
     ex_wb.wbcontrol.memory_write_enable := false.B
   }.otherwise {
     ex_wb.wbcontrol := fd_ex.wbcontrol
+    ex_wb.if_jump_flag        := ex.io.if_jump_flag
   }
 
   // debug
-  printf(cf"ex_wb = $ex_wb")
-  printf("\n")
+  // printf(cf"ex_wb = $ex_wb")
+  // printf("\n")
   // 
 
   // WB
